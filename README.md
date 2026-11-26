@@ -69,6 +69,8 @@ dsh --profile web --dump-config | grep -n riper5
 
 `plugin_manager` 的 `install_bundle`（Plugins 页的安装入口）与 CLI 不同：安装后会自动选中 bundle。
 
+排障：若 `--dump-config` 里 `riper5` 出现两段、且第二段带 `disabled: true`（来源是 profile 的 `cordis.patch.yml`），说明插件被显式关闭；在 Plugins 页启用，或删掉该覆盖块后重启。
+
 ### 钉 commit 与升级
 
 - 安装 spec 必须钉**完整 40 位 commit**：只有这种依赖才拥有 `update` 通道；分支或 tag 依赖会被标为不可更新。
@@ -247,6 +249,7 @@ dsh --profile <profile> --dump-config | grep -n riper5
 - 本机 `desktop` profile：移除旧 `@local/dsh-riper5-bundle` 后，从本地目录安装 `dsh-riper5@0.7.0`，`list_plugins` 中 `riper5` 行为 `enabled / active`，说明自引用包名可解析。
 - 2026-11-26：改钉 GitHub 源 `github:firefoxst/dsh-riper5#473d515`，pnpm 从 codeload tarball 落地，`node_modules/dsh-riper5` 是真实目录、版本 0.7.0（不再是 link）。CLI 安装未自动选中 bundle，需在 Plugins 页启用。
 - 2026-11-26 验证：`desktop` profile 启用后 `/mode` 返回 `RESEARCH`、`状态存储：持久化`、`沙箱：read-only（engage 前：workspace-write）`；同一会话在浏览器 GUI 里打开同样生效（浏览器视图仍属 `desktop` profile）。
-- 独立 `web` profile（`dsh --profile web`）本机尚未安装：`profiles/web` 无该依赖、无 `node_modules/dsh-riper5`。需要时按“安装”章节执行一次，步骤与 desktop 相同。
-- 会话提示：安装后本会话仍注入 `## RIPER-5 会话协议`，闸门生效。
-- 未完成：GitHub 源安装与 `web` profile 安装需在宿主 GUI/CLI 执行（安装动作要求 full access 或人工审批）。
+- Windows 机器：`desktop` 已验证；本机 `web` profile **未安装**（`profiles/web` 无该依赖、无 `node_modules/dsh-riper5`），需要时按“安装”章节执行。
+- Linux 机器（`web` profile，npm 安装的 DSH 0.2.2-rc.3）：GitHub 源安装成功，`node_modules/dsh-riper5` 为真实目录、`0.7.0`；启用后 `/mode` 返回 `RESEARCH` / `状态存储：持久化` / `沙箱：read-only（engage 前：workspace-write）`，沙箱闸生效。
+- 排障记录：`--dump-config` 里出现两段 `id: riper5` 时，第二段来自 `~/.dsh/profiles/<profile>/cordis.patch.yml` 的 `disabled: true` 覆盖，会让插件静默不加载（旧会话可能还有残留提示）。在 Plugins 页启用，或删掉该覆盖块后重启。
+- 会话提示：安装后新会话注入 `## RIPER-5 会话协议`，闸门生效。
