@@ -234,3 +234,11 @@ dsh --profile <profile> --dump-config | grep -n riper5
 ```
 
 用 Plugins 页卸载时选择 Remove。需要彻底清理时，可再删除会话状态目录 `~/.dsh/storages/riper5/`（可选；删除后这些会话回到 RESEARCH）。
+
+## 本机迁移记录（2026-11-26）
+
+- 包结构：`package.json` 增加 `dsh.bundle.patch`；补丁层改为自引用包名，不再包含绝对 file URL；新增 `locale/` 与 `icon.svg`。
+- 单元测试：`node --test --test-isolation=none` → 40 passed / 0 failed（受限沙箱跑法）。
+- 本机 `desktop` profile：移除旧 `@local/dsh-riper5-bundle` 后，从本地目录安装 `dsh-riper5@0.7.0`，`list_plugins` 中 `riper5` 行为 `enabled / active`，说明自引用包名可解析。
+- 会话提示：安装后本会话仍注入 `## RIPER-5 会话协议`，闸门生效。
+- 未完成：GitHub 源安装与 `web` profile 安装需在宿主 GUI/CLI 执行（安装动作要求 full access 或人工审批）。
