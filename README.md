@@ -38,6 +38,7 @@
 - 客户端（Desktop）：`desktop` profile
 - 浏览器 GUI（`dsh web`）：`web` profile
 - 同一台机器两者都用时，各执行一次；插件状态按会话隔离，互不影响。
+- 别把两者搞混：用浏览器打开 Desktop 应用自带的本地地址（Electron 托管）时仍是 `desktop` profile；只有 `dsh --profile web` / `dsh web` 启动、并打印带 token 的 `dsh web:` 地址的进程才是 `web` profile。
 
 ### 命令（Windows / Linux 通用）
 
@@ -245,5 +246,7 @@ dsh --profile <profile> --dump-config | grep -n riper5
 - 单元测试：`node --test --test-isolation=none` → 40 passed / 0 failed（受限沙箱跑法）。
 - 本机 `desktop` profile：移除旧 `@local/dsh-riper5-bundle` 后，从本地目录安装 `dsh-riper5@0.7.0`，`list_plugins` 中 `riper5` 行为 `enabled / active`，说明自引用包名可解析。
 - 2026-11-26：改钉 GitHub 源 `github:firefoxst/dsh-riper5#473d515`，pnpm 从 codeload tarball 落地，`node_modules/dsh-riper5` 是真实目录、版本 0.7.0（不再是 link）。CLI 安装未自动选中 bundle，需在 Plugins 页启用。
+- 2026-11-26 验证：`desktop` profile 启用后 `/mode` 返回 `RESEARCH`、`状态存储：持久化`、`沙箱：read-only（engage 前：workspace-write）`；同一会话在浏览器 GUI 里打开同样生效（浏览器视图仍属 `desktop` profile）。
+- 独立 `web` profile（`dsh --profile web`）本机尚未安装：`profiles/web` 无该依赖、无 `node_modules/dsh-riper5`。需要时按“安装”章节执行一次，步骤与 desktop 相同。
 - 会话提示：安装后本会话仍注入 `## RIPER-5 会话协议`，闸门生效。
 - 未完成：GitHub 源安装与 `web` profile 安装需在宿主 GUI/CLI 执行（安装动作要求 full access 或人工审批）。
