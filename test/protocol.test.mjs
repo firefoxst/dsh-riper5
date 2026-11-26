@@ -106,3 +106,120 @@ test("contract matching folds case on Windows", () => {
 	assert.equal(allowed, process.platform === "win32");
 	assert.equal(contractAllows({ files: ["src/app.ts"] }, "src/other.ts", cwd), false);
 });
+
+test("a verification section written as a fenced command block still counts", () => {
+	const text = plan([
+		"# Fix the plugin",
+		"## 目标",
+		"Keep the plan valid.",
+		"## 步骤",
+		"1. do the work",
+		"## 验证方式",
+		fence + "bash",
+		"node --test",
+		fence,
+		"[更改规划]",
+		"- 文件：a.ts"
+	]);
+	assert.deepEqual(validatePlan(text).files, ["a.ts"]);
+});
+
+test("a change block does not lend content to an empty goal section", () => {
+	const text = plan([
+		"# Fix the plugin",
+		"## 目标",
+		"[更改规划]",
+		"- 文件：a.ts",
+		"## 步骤",
+		"1. do the work",
+		"## 验证方式",
+		"node --test"
+	]);
+	assert.throws(() => validatePlan(text), /## 目标/u);
+});
+
+test("steps restarting at 1 are rejected", () => {
+	const text = plan([
+		"# Plan",
+		"## 目标",
+		"goal",
+		"## 步骤",
+		"1. first",
+		"2. second",
+		"1. restarted",
+		"## 验证方式",
+		"check",
+		"[更改规划]",
+		"- 文件：a.ts"
+	]);
+	assert.throws(() => validatePlan(text), /连续/u);
+});
+
+test("an indented sub-list is not counted as a top-level step", () => {
+	const text = plan([
+		"# Plan",
+		"## 目标",
+		"goal",
+		"## 步骤",
+		"1. install the dependency",
+		"   1. run the installer",
+		"   2. confirm the version",
+		"2. run the tests",
+		"## 验证方式",
+		"check",
+		"[更改规划]",
+		"- 文件：a.ts"
+	]);
+	assert.deepEqual(validatePlan(text).files, ["a.ts"]);
+});
+
+test("the change marker may be written as a heading", () => {
+	const text = plan([
+		"# Plan",
+		"## 目标",
+		"goal",
+		"## 步骤",
+		"1. do the work",
+		"## 验证方式",
+		"check",
+		"## [更改规划]",
+		"- 文件：a.ts"
+	]);
+	assert.deepEqual(validatePlan(text).files, ["a.ts"]);
+});
+
+test("the change marker may end with a colon", () => {
+	const text = plan([
+		"# Plan",
+		"## 目标",
+		"goal",
+		"## 步骤",
+		"1. do the work",
+		"## 验证方式",
+		"check",
+		"[更改规划]：",
+		"- 文件：a.ts"
+	]);
+	assert.deepEqual(validatePlan(text).files, ["a.ts"]);
+});
+
+test("an inline annotation is stripped from a file token", () => {
+	assert.deepEqual(parseFileTokens("src/a.ts（新建）、src/b.ts"), ["src/a.ts", "src/b.ts"]);
+	assert.deepEqual(parseFileTokens("src/a.ts (generated)"), ["src/a.ts"]);
+});
+
+test("a file line before the first heading is still rejected", () => {
+	const text = plan([
+		"# Plan",
+		"- 文件：a.ts",
+		"## 目标",
+		"goal",
+		"## 步骤",
+		"1. do the work",
+		"## 验证方式",
+		"check",
+		"[更改规划]",
+		"- 文件：b.ts"
+	]);
+	assert.throws(() => validatePlan(text), /更改规划/u);
+});
