@@ -31,7 +31,7 @@
 
 ## 安装
 
-安装源只有一个：公开 GitHub 仓库 `firefoxst/dsh-riper5`（公开仓库安装免凭据）。包本身既是 bundle（`package.json` 的 `dsh.bundle.patch`）又是插件，所以一次安装同时完成“加 profile 依赖 + 选中 bundle”，不再需要手改 profile 补丁，也不含任何机器相关的绝对路径。
+安装源只有一个：公开 GitHub 仓库 `firefoxst/dsh-riper5`（安装免凭据）。包本身既是 bundle（`package.json` 的 `dsh.bundle.patch`）又是插件，依赖里写的是包名，补丁行也是同一个包名，因此不出现机器相关路径。注意：**CLI 只写依赖，不会替你选中 bundle**，选中要在 Plugins 页做一次。
 
 ### 装到哪个 profile
 
@@ -52,17 +52,21 @@ dsh plugin --profile <profile> add "github:firefoxst/dsh-riper5#<SHA>"
 & "<install-dir>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "github:firefoxst/dsh-riper5#<SHA>"
 ```
 
-`<install-dir>` 指 DSH 安装目录（Windows 在用户级 `Programs` 目录下，Linux 为安装包解出的目录），按本机实际位置填写。安装后重启该 profile 的进程，Plugins 页应出现 RIPER-5 行；校验组合结果：
+`<install-dir>` 指 DSH 安装目录（Windows 在用户级 `Programs` 目录下，Linux 为安装包解出的目录），按本机实际位置填写。
+
+装完还要**启用一次**：`dsh plugin add` 只把包写进 profile 的 `dependencies`，不会写 `dsh.profile.bundles`。打开对应 surface 的 **Plugins** 页，找到 “RIPER-5 session protocol”，启用后重启进程。
+
+校验：`web` profile 可以用 CLI 组合；`desktop` profile 由 Electron 独占，CLI 会报 `profile "desktop" is managed exclusively by the Electron application`，改用 Plugins 页看行状态。
 
 ```bash
-dsh --profile <profile> --dump-config | grep -n riper5        # Linux
+dsh --profile web --dump-config | grep -n riper5
 ```
 
 ```powershell
-& "<install-dir>\...\dsh.cmd" --profile desktop --dump-config | Select-String riper5   # Windows
+& "<install-dir>\...\dsh.cmd" --profile web --dump-config | Select-String riper5
 ```
 
-命令行安装会自动选中新 bundle；若使用 Plugins 页或 `plugin_manager`，安装入口同样接受上面的 GitHub spec。
+`plugin_manager` 的 `install_bundle`（Plugins 页的安装入口）与 CLI 不同：安装后会自动选中 bundle。
 
 ### 钉 commit 与升级
 
@@ -240,5 +244,6 @@ dsh --profile <profile> --dump-config | grep -n riper5
 - 包结构：`package.json` 增加 `dsh.bundle.patch`；补丁层改为自引用包名，不再包含绝对 file URL；新增 `locale/` 与 `icon.svg`。
 - 单元测试：`node --test --test-isolation=none` → 40 passed / 0 failed（受限沙箱跑法）。
 - 本机 `desktop` profile：移除旧 `@local/dsh-riper5-bundle` 后，从本地目录安装 `dsh-riper5@0.7.0`，`list_plugins` 中 `riper5` 行为 `enabled / active`，说明自引用包名可解析。
+- 2026-11-26：改钉 GitHub 源 `github:firefoxst/dsh-riper5#473d515`，pnpm 从 codeload tarball 落地，`node_modules/dsh-riper5` 是真实目录、版本 0.7.0（不再是 link）。CLI 安装未自动选中 bundle，需在 Plugins 页启用。
 - 会话提示：安装后本会话仍注入 `## RIPER-5 会话协议`，闸门生效。
 - 未完成：GitHub 源安装与 `web` profile 安装需在宿主 GUI/CLI 执行（安装动作要求 full access 或人工审批）。
