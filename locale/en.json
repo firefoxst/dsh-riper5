@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "RIPER-5 session protocol",
+    "description": "Session state machine with a sandbox gate, a tool guard and an approval/review protocol. Switch modes with /mode."
+  }
+}

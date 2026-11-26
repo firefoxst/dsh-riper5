@@ -1,0 +1,10 @@
+# Mounts this package's own plugin into the profile root.
+#
+# The row names the package itself instead of an absolute file URL: a bundle is
+# installed as a profile dependency, so the bare package name resolves from the
+# profile's node_modules on every machine and platform.
+- insert:
+    - id: riper5
+      name: 'dsh-riper5'
+      config:
+        manageSandbox: true
