@@ -31,7 +31,7 @@
 
 ## 安装
 
-安装源只有一个：GitHub 仓库 `firefoxst/dsh-riper5`。包本身既是 bundle（`package.json` 的 `dsh.bundle.patch`）又是插件，所以一次安装同时完成“加 profile 依赖 + 选中 bundle”，不再需要手改 profile 补丁，也不含任何机器相关的绝对路径。
+安装源只有一个：公开 GitHub 仓库 `firefoxst/dsh-riper5`（公开仓库安装免凭据）。包本身既是 bundle（`package.json` 的 `dsh.bundle.patch`）又是插件，所以一次安装同时完成“加 profile 依赖 + 选中 bundle”，不再需要手改 profile 补丁，也不含任何机器相关的绝对路径。
 
 ### 装到哪个 profile
 
