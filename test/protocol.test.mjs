@@ -6,6 +6,7 @@ import {
 	contractAllows,
 	createPlanId,
 	parseFileTokens,
+	resolveModePhrase,
 	validatePlan,
 	withinRoot
 } from "../lib/protocol.js";
@@ -222,4 +223,32 @@ test("a file line before the first heading is still rejected", () => {
 		"- 文件：b.ts"
 	]);
 	assert.throws(() => validatePlan(text), /更改规划/u);
+});
+
+test("the plan sentence advances to PLAN", () => {
+	assert.equal(resolveModePhrase("进入规划模式"), "PLAN");
+});
+
+test("the execute and review sentences advance to their modes", () => {
+	assert.equal(resolveModePhrase("进入执行模式"), "EXECUTE");
+	assert.equal(resolveModePhrase("进入审查模式"), "REVIEW");
+});
+
+test("trailing punctuation and surrounding whitespace still match", () => {
+	assert.equal(resolveModePhrase("  进入规划模式。 "), "PLAN");
+	assert.equal(resolveModePhrase("进入执行模式！"), "EXECUTE");
+	assert.equal(resolveModePhrase("进入审查模式."), "REVIEW");
+});
+
+test("a negation or extra words keep the sentence a normal request", () => {
+	assert.equal(resolveModePhrase("不要进入执行模式"), null);
+	assert.equal(resolveModePhrase("我想进入规划模式看看"), null);
+	assert.equal(resolveModePhrase("进入规划模式后呢？"), null);
+});
+
+test("an empty or unknown sentence resolves to no mode", () => {
+	assert.equal(resolveModePhrase(""), null);
+	assert.equal(resolveModePhrase("   "), null);
+	assert.equal(resolveModePhrase(null), null);
+	assert.equal(resolveModePhrase("继续"), null);
 });

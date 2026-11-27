@@ -96,6 +96,7 @@ dsh --profile web --dump-config | grep -n riper5
         strictBash: false         # true = 非 EXECUTE 模式完全禁用 bash
         executeMode: workspace-write  # 或 "restore"：EXECUTE 沿用 engage 前的沙箱
         autoApproveText: true     # 审批中用户整句说“同意/可以/按规划执行”即视为批准
+        textModeSwitch: true      # 整句「进入规划/执行/审查模式」直接切换模式并开始该模式的工作
         reviewProvider: spawn     # 独立审查用的 subagent provider；fork 默认被拒
         reviewTimeoutMs: 600000   # 单次独立审查超时（毫秒）
         reviewAgentPreset: null   # 可选：审查员 agent preset（要求 spawn 类 provider）
@@ -120,7 +121,13 @@ dsh --profile web --dump-config | grep -n riper5
 /mode off           退出并还原
 ```
 
-切模式只认 `/mode` 命令（0.6.0 移除了文本触发，避免口语误伤）；审批卡片等待期间直接回复“同意/可以/按规划执行”视为批准（`autoApproveText`）。
+切模式有两个入口：`/mode` 命令，或整句发送下面三句（只认整句、去句末标点，不做子串匹配；可用 `textModeSwitch: false` 关闭）：
+
+- `进入规划模式`：切到 PLAN，本回合开始规划并调用 `propose_plan`；
+- `进入执行模式`：已有草稿计划（提交后被取消审批或选择“继续完善”留下的那条）时视为批准，立即进入 EXECUTE；没有草稿则只写提示、不切换；
+- `进入审查模式`：仅从 EXECUTE 可进，进入后本回合调用 `submit_review`。
+
+审批卡片等待期间直接回复“同意/可以/按规划执行”视为批准（`autoApproveText`）；审批卡打开时上述三句不生效，避免抢答。
 
 ### PLAN：`propose_plan`
 
@@ -152,7 +159,7 @@ dsh --profile web --dump-config | grep -n riper5
 
 - **初始化**：会话第一次 `agent/pre-step` 时写入初始状态（默认 RESEARCH），并记录 engage 前的沙箱模式（`sandboxBefore`）。放在 pre-step 而不是 `agent/created`，是为了和 permission-presets 的初始化顺序解耦。
 - **持久化**：每次状态变更同步更新内存，并按会话串行排入 `storageDomain` 的写入链（`~/.dsh/storages/riper5/sessions/`）；`planSubmissions`、`lastFindings`、`notice` 都在记录里。写入失败会在 `/mode` 状态里显示；没有 `storageDomain` 服务时降级为仅内存，重启后回到 RESEARCH（只读，不会放开闸门）。
-- **变更时机**：切模式立即生效；turn 正在进行时切换请求会被拒绝并提示“本步结束后再切”（0.6.0 移除了 pending 排队与文本触发）。
+- **变更时机**：切模式立即生效；turn 正在进行时 `/mode` 命令会被拒绝并提示“本步结束后再切”（0.6.0 移除了 pending 排队）；文本触发不经过该检查，见“使用”。
 - **子代理**：`agent/created` 之后子代理第一步继承父代理当前模式（含 EXECUTE 的 planId/契约）；父代理一旦降级为只读模式，所有存活子代理被钉为只读并清空它们的 planId。
 - **fork**：fork 产物是新的会话 id，没有继承的状态记录，第一步就是 RESEARCH；即使万一存在带批准的记录（`isSeeded===true`），EXECUTE 也会降为 PLAN 并清空 planId/契约。
 
@@ -228,6 +235,9 @@ node tools/repair-session-log.mjs "<DSH_HOME>/sessions/<project>/<session-id>/se
 - **与 dsh-plan-mode 共存**：web profile 的 preset-standard 同时启用了 `dsh-plan-mode`，两者都会注入提示和审批卡片；建议部署时二选一，或在 preset 中禁用 plan-mode。
 - **权限预设读数显示 `custom`**：本插件只写 `sandbox/mode`，不改 `permission/preset`，因此 GUI 的权限预设会显示为自定义；`/mode off` 会还原沙箱但不恢复预设名。
 - 计划契约是“文件级”而非符号级：同文件内的越界修改不会被拦截。
+- **文本触发不排队**：命中三句时在消息入队阶段直接切换，绕过 `/mode` 的“turn 进行中拒绝切换”检查；turn 正在执行时收到这类消息会在下一步生效，沙箱随之变化，没有排队机制。
+- **文本触发只对主代理生效**：子代理会话里发同样的句子不会切换。
+- **草稿计划的文本批准跳过审批卡**：`进入执行模式` 命中草稿时直接写批准审计并进入 EXECUTE，不再弹卡片；草稿的独立审查结果沿用提交时的记录。
 - 本插件零外部依赖，`apply_patch` 的路径解析覆盖常见 Codex 补丁头；自定义补丁格式需自行确认。
 
 ## 卸载
